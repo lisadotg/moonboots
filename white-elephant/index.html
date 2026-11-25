@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>White Elephant Gift Swap</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+<style>
+  :root {
+    --bg: #fbf7f2;
+    --card: #ffffff;
+    --ink: #2b2420;
+    --muted: #7a6f66;
+    --line: #e8dfd5;
+    --red: #c8363d;
+    --red-dark: #a1272d;
+    --green: #2f7d5b;
+    --gold: #e0a526;
+    --blue: #3a6ea5;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  header.top {
+    background: var(--red);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header.top h1 { margin: 0; font-size: 1.35rem; letter-spacing: .3px; }
+  header.top .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h2 { margin: 0 0 12px; font-size: 1.2rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+  }
+  .muted { color: var(--muted); }
+  .small { font-size: .875rem; }
+  button, .btn {
+    font: inherit;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    background: var(--red);
+    color: #fff;
+    font-weight: 600;
+    transition: background .15s, transform .05s;
+  }
+  button:hover { background: var(--red-dark); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--ink); border-color: var(--line); }
+  button.secondary:hover { background: #f4eee7; }
+  button.ghost { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.35); }
+  button.ghost:hover { background: rgba(255,255,255,.28); }
+  button.green { background: var(--green); }
+  button.green:hover { background: #24644a; }
+  button.big { padding: 14px 28px; font-size: 1.1rem; }
+  button.icon { padding: 4px 9px; background: transparent; color: var(--muted); border-color: var(--line); font-weight: 500; }
+  button.icon:hover { background: #f4eee7; color: var(--ink); }
+  input[type=text], input[type=url], input[type=number], textarea {
+    font: inherit;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
+  label { font-weight: 600; font-size: .92rem; }
+
+  /* ---------- Setup ---------- */
+  .setup-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .setup-grid { grid-template-columns: 1fr; } }
+  .add-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .add-row input { flex: 1; }
+  .player-list { list-style: none; margin: 0; padding: 0; }
+  .player-list li {
+    display: grid;
+    grid-template-columns: 28px 1fr 1.3fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .player-list li:last-child { border-bottom: 0; }
+  .player-list .num { color: var(--muted); font-weight: 700; text-align: right; }
+  .player-list .row-actions { display: flex; gap: 4px; }
+  .player-list input { padding: 6px 10px; }
+  @media (max-width: 600px) {
+    .player-list li { grid-template-columns: 24px 1fr auto; }
+    .player-list li .gift-in { grid-column: 2 / 4; }
+  }
+  .setting { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+  .setting .inline { display: flex; align-items: center; gap: 10px; }
+  .setting input[type=number] { width: 90px; }
+  .setting input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--red); }
+  .empty { text-align: center; padding: 26px 10px; color: var(--muted); }
+  .start-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+  /* ---------- Game ---------- */
+  .game-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .game-grid { grid-template-columns: 1fr; } }
+  .banner {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 8px solid var(--green);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+  }
+  .banner.stolen { border-left-color: var(--gold); }
+  .banner.final { border-left-color: var(--blue); }
+  .banner .eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 700; }
+  .banner .who { font-size: 2rem; font-weight: 800; margin: 2px 0 4px; }
+  .banner .hint { color: var(--muted); }
+  .banner .banner-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .section-title { display: flex; align-items: baseline; justify-content: space-between; margin: 6px 0 10px; }
+  .section-title h2 { margin: 0; }
+  .gifts { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px; }
+
+  .gift {
+    position: relative;
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    text-align: left;
+    padding: 0;
+    color: var(--ink);
+    font-weight: 400;
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
+  }
+  .gift:hover { background: var(--card); }
+  .gift.clickable { cursor: pointer; }
+  .gift.clickable:hover { border-color: var(--green); transform: translateY(-2px); }
+  .gift.disabled { cursor: default; }
+  .gift.unavailable { opacity: .55; }
+
+  .gift.wrapped {
+    background: var(--wrap, var(--red));
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+  }
+  .gift.wrapped:hover { background: var(--wrap, var(--red)); }
+  .gift.wrapped::before, .gift.wrapped::after {
+    content: "";
+    position: absolute;
+    background: var(--ribbon, var(--gold));
+  }
+  .gift.wrapped::before { left: 50%; top: 0; bottom: 0; width: 18px; transform: translateX(-50%); }
+  .gift.wrapped::after { top: 50%; left: 0; right: 0; height: 18px; transform: translateY(-50%); }
+  .gift.wrapped .tag {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 1.25rem;
+    border-radius: 999px;
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+  .gift.wrapped .action-label {
+    position: absolute; bottom: 8px; left: 0; right: 0; text-align: center;
+    z-index: 1; font-weight: 700; font-size: .85rem; opacity: 0;
+    text-shadow: 0 1px 3px rgba(0,0,0,.5);
+    transition: opacity .15s;
+  }
+  .gift.wrapped.clickable:hover .action-label { opacity: 1; }
+
+  .gift .img { height: 110px; background: #f2ece5 center/cover no-repeat; }
+  .gift .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .gift .desc { font-weight: 700; font-size: 1rem; word-break: break-word; }
+  .gift .holder { font-size: .88rem; color: var(--muted); }
+  .gift .holder b { color: var(--ink); }
+  .gift .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+  .badge {
+    font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 2px 9px;
+    background: #f2ece5; color: var(--muted);
+  }
+  .badge.frozen { background: #e2edf8; color: var(--blue); }
+  .badge.blocked { background: #fbefd6; color: #8a6210; }
+  .badge.steal { background: #e3f1ea; color: var(--green); }
+  .gift .edit {
+    position: absolute; top: 6px; right: 6px; z-index: 2;
+    background: rgba(255,255,255,.92); border: 1px solid var(--line); color: var(--muted);
+    font-size: .75rem; padding: 2px 8px; border-radius: 8px; font-weight: 600;
+  }
+  .gift .edit:hover { color: var(--ink); background: #fff; }
+  .gift.mine { border-color: var(--blue); }
+
+  .side .card + .card { margin-top: 16px; }
+  .order { list-style: none; margin: 0; padding: 0; }
+  .order li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: .95rem; }
+  .order li:last-child { border-bottom: 0; }
+  .order .n { width: 24px; height: 24px; border-radius: 50%; background: #f2ece5; display: grid; place-items: center; font-size: .78rem; font-weight: 700; color: var(--muted); flex: none; }
+  .order li.done .n { background: var(--green); color: #fff; }
+  .order li.current { font-weight: 800; }
+  .order li.current .n { background: var(--red); color: #fff; }
+  .order li.active-victim { font-weight: 800; color: #8a6210; }
+  .order .got { margin-left: auto; color: var(--muted); font-size: .82rem; text-align: right; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; font-size: .88rem; }
+  .log li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .log li:last-child { border-bottom: 0; }
+  .rules-summary { font-size: .88rem; color: var(--muted); margin: 0; padding-left: 18px; }
+
+  /* ---------- Results ---------- */
+  .results-head { text-align: center; margin: 10px 0 24px; }
+  .results-head .big-emoji { font-size: 3rem; }
+  .results-head h2 { font-size: 2rem; margin: 4px 0; }
+  table.results { width: 100%; border-collapse: collapse; }
+  table.results th, table.results td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.results th { font-size: .8rem; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+  table.results img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin-right: 10px; }
+  .results-actions { display: flex; justify-content: center; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(30,20,15,.5);
+    display: grid; place-items: center; padding: 20px; z-index: 50;
+    animation: fade .15s ease-out;
+  }
+  .modal {
+    background: #fff; border-radius: 18px; padding: 24px; width: min(480px, 100%);
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    animation: pop .18s ease-out;
+  }
+  .modal h3 { margin: 0 0 6px; font-size: 1.35rem; }
+  .modal .field { margin: 14px 0; display: flex; flex-direction: column; gap: 6px; }
+  .modal .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-weight: 600; z-index: 60; box-shadow: var(--shadow);
+    animation: fade .2s ease-out;
+  }
+
+  .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+  .confetti i {
+    position: absolute; top: -12px; width: 10px; height: 14px; border-radius: 2px;
+    animation: fall linear forwards;
+  }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 20px; }
+
+  @media print {
+    header.top, .results-actions, footer { display: none; }
+    body { background: #fff; }
+    .card { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🎁 White Elephant Gift Swap</h1>
+  <div class="actions" id="header-actions"></div>
+</header>
+<main id="app"></main>
+<footer>Your game is saved in this browser, so you can refresh without losing anything.</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "white-elephant-state-v1";
+  const WRAPS = [
+    ["#c8363d", "#f3c845"], ["#2f7d5b", "#f4f0e6"], ["#3a6ea5", "#f3c845"],
+    ["#7b4fa0", "#f6d6e8"], ["#d9822b", "#2f7d5b"], ["#1f5f6b", "#f2b3b3"],
+    ["#a13e66", "#f3c845"], ["#4b5d2e", "#e9d9b8"], ["#24466e", "#e8e8e8"],
+  ];
+
+  const defaultSettings = () => ({
+    maxStealsPerGift: 3,   // 0 = unlimited; gift "freezes" once stolen this many times
+    maxStealsPerTurn: 0,   // 0 = unlimited steals in a single turn chain
+    noStealBack: true,     // can't immediately steal back the gift just taken from you
+    finalSwap: true,       // first player gets a final swap at the end
+  });
+
+  const freshState = () => ({
+    phase: "setup",        // setup | play | final | done
+    players: [],           // {id, name, gift}  (gift = optional description of what they brought)
+    settings: defaultSettings(),
+    order: [],             // player ids in turn order
+    gifts: [],             // {id, num, desc, image, holder, opened, steals, wrap}
+    turnIndex: 0,
+    active: null,          // player id who is currently choosing
+    turnSteals: 0,
+    blocks: [],            // [{giftId, playerId}] - can't steal back this turn
+    log: [],
+    history: [],
+  });
+
+  let state = load() || freshState();
+  let ui = { modal: null, toast: null };
+
+  // ---------- persistence ----------
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      s.settings = Object.assign(defaultSettings(), s.settings || {});
+      s.history = s.history || [];
+      return s;
+    } catch (e) { return null; }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ---------- helpers ----------
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const player = (id) => state.players.find((p) => p.id === id);
+  const pname = (id) => (player(id) ? player(id).name : "?");
+  const giftOf = (pid) => state.gifts.find((g) => g.holder === pid);
+  const giftById = (id) => state.gifts.find((g) => g.id === id);
+  const giftName = (g) => (g.desc && g.desc.trim()) ? g.desc.trim() : "Gift #" + g.num;
+  const safeUrl = (u) => (/^(https?:|data:image\/)/i.test((u || "").trim()) ? u.trim() : "");
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function snapshot() {
+    const copy = JSON.parse(JSON.stringify(state));
+    delete copy.history;
+    state.history.push(copy);
+    if (state.history.length > 200) state.history.shift();
+  }
+  function undo() {
+    const prev = state.history.pop();
+    if (!prev) return;
+    const hist = state.history;
+    state = Object.assign(prev, { history: hist });
+    ui.modal = null;
+    save(); render();
+    toast("Undid last move");
+  }
+  function addLog(msg) { state.log.unshift(msg); }
+  function isFrozen(g) {
+    const m = state.settings.maxStealsPerGift;
+    return m > 0 && g.steals >= m;
+  }
+  function isBlocked(g, pid) {
+    return state.settings.noStealBack && state.blocks.some((b) => b.giftId === g.id && b.playerId === pid);
+  }
+  function stealLimitReached() {
+    const m = state.settings.maxStealsPerTurn;
+    return m > 0 && state.turnSteals >= m;
+  }
+  function canSteal(g, pid) {
+    return g.opened && g.holder && g.holder !== pid && !isFrozen(g) && !isBlocked(g, pid) && !stealLimitReached();
+  }
+
+  // ---------- actions ----------
+  function addPlayer(name) {
+    name = name.trim();
+    if (!name) return;
+    state.players.push({ id: uid(), name, gift: "" });
+    save(); render();
+    const inp = document.getElementById("new-player");
+    if (inp) inp.focus();
+  }
+  function startGame() {
+    if (state.players.length < 2) { toast("Add at least 2 players"); return; }
+    snapshot();
+    const shuffled = shuffle(state.players.map((p) => p.id));
+    state.order = shuffled;
+    // One wrapped gift per player. Shuffle so gift numbers don't reveal who brought what.
+    const descs = shuffle(state.players.map((p) => p.gift || ""));
+    const wraps = shuffle(WRAPS.map((_, i) => i));
+    state.gifts = descs.map((d, i) => ({
+      id: uid(), num: i + 1, desc: d, image: "", holder: null, opened: false, steals: 0,
+      wrap: wraps[i % wraps.length],
+    }));
+    state.phase = "play";
+    state.turnIndex = 0;
+    state.active = state.order[0];
+    state.turnSteals = 0;
+    state.blocks = [];
+    state.log = ["🎲 Turn order drawn. " + pname(state.order[0]) + " goes first!"];
+    save(); render();
+  }
+  function rerollOrder() {
+    snapshot();
+    state.order = shuffle(state.order);
+    state.active = state.order[0];
+    state.log = ["🎲 Turn order re-drawn. " + pname(state.order[0]) + " goes first!"];
+    save(); render();
+  }
+  function openGift(gid, desc, image) {
+    const g = giftById(gid);
+    if (!g || g.opened) return;
+    snapshot();
+    const who = state.active;
+    g.opened = true;
+    g.holder = who;
+    g.desc = desc.trim();
+    g.image = safeUrl(image);
+    addLog("🎁 " + pname(who) + " opened " + giftName(g) + (g.desc ? "" : "") );
+    confetti();
+    endTurn();
+  }
+  function stealGift(gid) {
+    const g = giftById(gid);
+    const thief = state.active;
+    if (!g || !canSteal(g, thief)) return;
+    snapshot();
+    const victim = g.holder;
+    g.holder = thief;
+    g.steals += 1;
+    state.turnSteals += 1;
+    state.blocks.push({ giftId: g.id, playerId: victim });
+    let msg = "😈 " + pname(thief) + " stole " + giftName(g) + " from " + pname(victim);
+    if (isFrozen(g)) msg += " — it's now locked 🔒";
+    addLog(msg);
+    state.active = victim;
+    save(); render();
+    toast(pname(victim) + ", it's your pick!");
+  }
+  function endTurn() {
+    state.turnSteals = 0;
+    state.blocks = [];
+    state.turnIndex += 1;
+    if (state.turnIndex >= state.order.length) {
+      if (state.settings.finalSwap && state.order.length > 1) {
+        state.phase = "final";
+        state.active = state.order[0];
+        addLog("🔁 Final round: " + pname(state.order[0]) + " may swap with anyone.");
+      } else {
+        finish();
+        return;
+      }
+    } else {
+      state.active = state.order[state.turnIndex];
+    }
+    save(); render();
+  }
+  function finalSwap(gid) {
+    const first = state.order[0];
+    const target = giftById(gid);
+    const mine = giftOf(first);
+    if (!target || !mine || target.id === mine.id || isFrozen(target)) return;
+    snapshot();
+    const other = target.holder;
+    target.holder = first;
+    mine.holder = other;
+    target.steals += 1;
+    addLog("🔁 " + pname(first) + " swapped " + giftName(mine) + " for " + pname(other) + "'s " + giftName(target));
+    finish();
+  }
+  function keepFinal() {
+    snapshot();
+    addLog("👍 " + pname(state.order[0]) + " kept their gift.");
+    finish();
+  }
+  function finish() {
+    state.phase = "done";
+    state.active = null;
+    addLog("🎉 Game over!");
+    save(); render();
+    confetti(160);
+  }
+  function editGift(gid, desc, image) {
+    const g = giftById(gid);
+    if (!g) return;
+    snapshot();
+    g.desc = desc.trim();
+    g.image = safeUrl(image);
+    save(); render();
+  }
+  function newGame(keepPlayers) {
+    const players = keepPlayers ? state.players.map((p) => ({ id: p.id, name: p.name, gift: "" })) : [];
+    const settings = state.settings;
+    state = freshState();
+    state.players = players;
+    state.settings = settings;
+    ui.modal = null;
+    save(); render();
+  }
+
+  // ---------- modals & toasts ----------
+  function openModal(m) { ui.modal = m; renderModal(); }
+  function closeModal() { ui.modal = null; renderModal(); }
+  function toast(msg) {
+    ui.toast = msg;
+    renderToast();
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { ui.toast = null; renderToast(); }, 2600);
+  }
+  function confirmBox(title, text, okLabel, onOk, danger) {
+    openModal({ kind: "confirm", title, text, okLabel, onOk, danger });
+  }
+  function confetti(n) {
+    n = n || 70;
+    const wrap = document.createElement("div");
+    wrap.className = "confetti";
+    const colors = ["#c8363d", "#2f7d5b", "#e0a526", "#3a6ea5", "#7b4fa0", "#f39ab4"];
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement("i");
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.background = colors[i % colors.length];
+      p.style.animationDuration = 1.6 + Math.random() * 1.8 + "s";
+      p.style.animationDelay = Math.random() * 0.5 + "s";
+      p.style.transform = "rotate(" + Math.random() * 360 + "deg)";
+      wrap.appendChild(p);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 4200);
+  }
+
+  // ---------- rendering ----------
+  const app = document.getElementById("app");
+  const headerActions = document.getElementById("header-actions");
+
+  function render() {
+    renderHeader();
+    if (state.phase === "setup") renderSetup();
+    else if (state.phase === "done") renderResults();
+    else renderGame();
+    renderModal();
+  }
+
+  function renderHeader() {
+    let h = "";
+    if (state.phase !== "setup") {
+      h += '<button class="ghost" data-act="undo"' + (state.history.length ? "" : " disabled") + '>↶ Undo</button>';
+      h += '<button class="ghost" data-act="new-game">New game</button>';
+    }
+    h += '<button class="ghost" data-act="rules">How to play</button>';
+    if (document.fullscreenEnabled) h += '<button class="ghost" data-act="fullscreen">⛶ Fullscreen</button>';
+    headerActions.innerHTML = h;
+  }
+
+  function renderSetup() {
+    const s = state.settings;
+    const list = state.players.length
+      ? '<ul class="player-list">' + state.players.map((p, i) => (
+          '<li>' +
+            '<span class="num">' + (i + 1) + '</span>' +
+            '<input type="text" value="' + esc(p.name) + '" data-edit-name="' + p.id + '" aria-label="Player name">' +
+            '<input class="gift-in" type="text" value="' + esc(p.gift) + '" data-edit-gift="' + p.id + '" placeholder="Gift they brought (optional, stays hidden)" aria-label="Gift description">' +
+            '<span class="row-actions"><button class="icon" data-remove="' + p.id + '" title="Remove">✕</button></span>' +
+          '</li>'
+        )).join("") + "</ul>"
+      : '<div class="empty">No players yet. Add everyone who brought a gift.</div>';
+
+    app.innerHTML =
+      '<div class="setup-grid">' +
+        '<section class="card">' +
+          '<h2>Players &amp; gifts</h2>' +
+          '<p class="muted small" style="margin-top:-6px">Every player brings one wrapped gift. You can note what each gift is now, or type it in when it gets opened.</p>' +
+          '<form class="add-row" id="add-form" autocomplete="off">' +
+            '<input type="text" id="new-player" placeholder="Player name" aria-label="New player name">' +
+            '<button type="submit">Add</button>' +
+          '</form>' +
+          list +
+          '<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Paste a list of names</summary>' +
+            '<textarea id="bulk" rows="4" style="margin-top:8px" placeholder="One name per line, or comma-separated"></textarea>' +
+            '<div style="margin-top:8px"><button class="secondary" data-act="bulk-add">Add all</button></div>' +
+          '</details>' +
+        '</section>' +
+        '<section class="card">' +
+          '<h2>House rules</h2>' +
+          '<div class="setting">' +
+            '<label for="set-max-gift">Lock a gift after it\'s been stolen</label>' +
+            '<div class="inline"><input type="number" min="0" max="20" id="set-max-gift" value="' + s.maxStealsPerGift + '"> <span class="muted small">times (0 = never lock)</span></div>' +
+          '</div>' +
+          '<div class="setting">' +
+            '<label for="set-max-turn">Most steals in one turn</label>' +
+            '<div class="inline"><input type="number" min="0" max="50" id="set-max-turn" value="' + s.maxStealsPerTurn + '"> <span class="muted small">(0 = no limit)</span></div>' +
+          '</div>' +
+          '<div class="setting">' +
+            '<label class="inline"><input type="checkbox" id="set-no-back"' + (s.noStealBack ? " checked" : "") + '> No immediate steal-backs</label>' +
+            '<span class="muted small">You can\'t take back a gift that was just stolen from you during the same turn.</span>' +
+          '</div>' +
+          '<div class="setting">' +
+            '<label class="inline"><input type="checkbox" id="set-final"' + (s.finalSwap ? " checked" : "") + '> First player gets a final swap</label>' +
+            '<span class="muted small">Player 1 had nothing to steal, so at the end they may trade with any unlocked gift.</span>' +
+          '</div>' +
+        '</section>' +
+      '</div>' +
+      '<div class="start-bar">' +
+        '<span class="muted">' + state.players.length + ' player' + (state.players.length === 1 ? "" : "s") + ' · turn order is drawn at random when you start</span>' +
+        '<div style="display:flex;gap:8px">' +
+          (state.players.length ? '<button class="secondary" data-act="clear-players">Clear all</button>' : "") +
+          '<button class="big green" data-act="start"' + (state.players.length < 2 ? " disabled" : "") + '>Start the swap →</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById("add-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      addPlayer(document.getElementById("new-player").value);
+    });
+    const num = (id, key) => document.getElementById(id).addEventListener("change", (e) => {
+      const v = Math.max(0, parseInt(e.target.value, 10) || 0);
+      state.settings[key] = v; save();
+    });
+    num("set-max-gift", "maxStealsPerGift");
+    num("set-max-turn", "maxStealsPerTurn");
+    document.getElementById("set-no-back").addEventListener("change", (e) => { state.settings.noStealBack = e.target.checked; save(); });
+    document.getElementById("set-final").addEventListener("change", (e) => { state.settings.finalSwap = e.target.checked; save(); });
+    app.querySelectorAll("[data-edit-name]").forEach((el) => el.addEventListener("input", (e) => {
+      const p = player(el.dataset.editName); if (p) { p.name = e.target.value; save(); }
+    }));
+    app.querySelectorAll("[data-edit-gift]").forEach((el) => el.addEventListener("input", (e) => {
+      const p = player(el.dataset.editGift); if (p) { p.gift = e.target.value; save(); }
+    }));
+  }
+
+  function giftCard(g, mode) {
+    // mode: "open" | "steal" | "swap" | "none"
+    const holder = g.holder;
+    const active = state.active;
+    if (!g.opened) {
+      const w = WRAPS[g.wrap % WRAPS.length];
+      const clickable = mode === "play";
+      return '<button class="gift wrapped ' + (clickable ? "clickable" : "disabled unavailable") + '" style="--wrap:' + w[0] + ';--ribbon:' + w[1] + '"' +
+        (clickable ? ' data-open="' + g.id + '"' : " disabled") + ' aria-label="Wrapped gift ' + g.num + '">' +
+        '<span class="tag">' + g.num + '</span>' +
+        '<span class="action-label">Open me</span>' +
+      '</button>';
+    }
+    const frozen = isFrozen(g);
+    let clickable = false, note = "";
+    if (mode === "play") {
+      clickable = canSteal(g, active);
+      if (!clickable) {
+        if (frozen) note = "";
+        else if (isBlocked(g, active)) note = '<span class="badge blocked">Can\'t steal back</span>';
+        else if (stealLimitReached()) note = '<span class="badge blocked">Steal limit hit</span>';
+      }
+    } else if (mode === "swap") {
+      const mine = giftOf(state.order[0]);
+      clickable = !frozen && mine && g.id !== mine.id;
+    }
+    const isMine = mode === "swap" && holder === state.order[0];
+    const m = state.settings.maxStealsPerGift;
+    const img = safeUrl(g.image);
+    const stealBadge = g.steals > 0 || m > 0
+      ? '<span class="badge' + (frozen ? " frozen" : "") + '">' + (frozen ? "🔒 Locked" : "Stolen " + g.steals + (m > 0 ? "/" + m : "") + "×") + "</span>"
+      : "";
+    const actionBadge = clickable ? '<span class="badge steal">' + (mode === "swap" ? "Swap" : "Steal") + "</span>" : "";
+    return '<div class="gift ' + (clickable ? "clickable" : "disabled") + (isMine ? " mine" : "") + (mode !== "none" && !clickable && !isMine ? " unavailable" : "") + '"' +
+      (clickable ? ' role="button" tabindex="0" data-' + (mode === "swap" ? "swap" : "steal") + '="' + g.id + '"' : "") + '>' +
+      '<span class="edit" role="button" tabindex="0" data-edit-gift-card="' + g.id + '" title="Edit gift">Edit</span>' +
+      (img ? '<div class="img" style="background-image:url(&quot;' + esc(img) + '&quot;)"></div>' : "") +
+      '<div class="body">' +
+        '<div class="desc">' + esc(giftName(g)) + "</div>" +
+        '<div class="holder">' + (isMine ? "Your current gift" : "Held by <b>" + esc(pname(holder)) + "</b>") + "</div>" +
+        '<div class="badges">' + stealBadge + note + actionBadge + "</div>" +
+      "</div>" +
+    "</div>";
+  }
+
+  function renderGame() {
+    const final = state.phase === "final";
+    const active = state.active;
+    const turnPlayer = state.order[state.turnIndex];
+    const isVictim = !final && active !== turnPlayer;
+    const wrapped = state.gifts.filter((g) => !g.opened);
+    const opened = state.gifts.filter((g) => g.opened);
+    const anyStealable = opened.some((g) => canSteal(g, active));
+
+    let banner;
+    if (final) {
+      const mine = giftOf(active);
+      banner =
+        '<div class="banner final">' +
+          '<div class="eyebrow">Final round</div>' +
+          '<div class="who">' + esc(pname(active)) + ", last chance!</div>" +
+          '<div class="hint">You went first, so you get one last move. Click any unlocked gift to swap it for your <b>' + esc(mine ? giftName(mine) : "gift") + "</b>, or keep what you have.</div>" +
+          '<div class="banner-actions"><button class="green" data-act="keep">Keep my gift &amp; finish</button></div>' +
+        "</div>";
+    } else {
+      const hint = anyStealable
+        ? "Pick a wrapped gift to open, or steal one that's already open."
+        : "Nothing can be stolen right now, so pick a wrapped gift to open.";
+      banner =
+        '<div class="banner' + (isVictim ? " stolen" : "") + '">' +
+          '<div class="eyebrow">' + (isVictim
+            ? "Turn " + (state.turnIndex + 1) + " of " + state.order.length + " · " + esc(pname(turnPlayer)) + "'s turn continues"
+            : "Turn " + (state.turnIndex + 1) + " of " + state.order.length) + "</div>" +
+          '<div class="who">' + (isVictim ? "😱 " + esc(pname(active)) + ", you got robbed!" : "🎄 " + esc(pname(active)) + ", you're up!") + "</div>" +
+          '<div class="hint">' + hint + (isVictim ? " Your turn's next player waits until someone opens a wrapped gift." : "") + "</div>" +
+        "</div>";
+    }
+
+    const mode = final ? "swap" : "play";
+    const giftsHtml =
+      (opened.length
+        ? '<div class="section-title"><h2>Opened gifts</h2><span class="muted small">' + opened.length + " opened</span></div>" +
+          '<div class="gifts">' + opened.map((g) => giftCard(g, mode)).join("") + "</div>"
+        : "") +
+      (wrapped.length
+        ? '<div class="section-title"><h2>Wrapped gifts</h2><span class="muted small">' + wrapped.length + " left</span></div>" +
+          '<div class="gifts">' + wrapped.map((g) => giftCard(g, final ? "none" : "play")).join("") + "</div>"
+        : "");
+
+    const orderHtml = state.order.map((pid, i) => {
+      const done = final ? true : i < state.turnIndex;
+      const cur = !final && i === state.turnIndex;
+      const g = giftOf(pid);
+      const victim = pid === active && !cur;
+      return '<li class="' + (done ? "done " : "") + (cur ? "current " : "") + (victim ? "active-victim" : "") + '">' +
+        '<span class="n">' + (done && !victim ? "✓" : i + 1) + "</span>" +
+        "<span>" + esc(pname(pid)) + "</span>" +
+        '<span class="got" title="' + esc(g ? giftName(g) : "") + '">' + (g ? esc(giftName(g)) : victim ? "choosing…" : "") + "</span>" +
+      "</li>";
+    }).join("");
+
+    const s = state.settings;
+    const rules = [];
+    rules.push(s.maxStealsPerGift > 0 ? "Gifts lock after " + s.maxStealsPerGift + " steal" + (s.maxStealsPerGift === 1 ? "" : "s") : "Gifts never lock");
+    if (s.maxStealsPerTurn > 0) rules.push("Max " + s.maxStealsPerTurn + " steal" + (s.maxStealsPerTurn === 1 ? "" : "s") + " per turn");
+    if (s.noStealBack) rules.push("No immediate steal-backs");
+    if (s.finalSwap) rules.push("First player gets a final swap");
+
+    const canReroll = state.phase === "play" && state.turnIndex === 0 && opened.length === 0;
+
+    app.innerHTML =
+      '<div class="game-grid">' +
+        "<div>" + banner + giftsHtml + "</div>" +
+        '<aside class="side">' +
+          '<div class="card">' +
+            '<div class="section-title"><h2>Turn order</h2>' + (canReroll ? '<button class="icon" data-act="reroll" title="Draw a new random order">🎲 Re-draw</button>' : "") + "</div>" +
+            '<ul class="order">' + orderHtml + "</ul>" +
+          "</div>" +
+          '<div class="card"><h2>Rules</h2><ul class="rules-summary">' + rules.map((r) => "<li>" + esc(r) + "</li>").join("") + "</ul></div>" +
+          '<div class="card"><h2>What happened</h2><ul class="log">' + state.log.map((l) => "<li>" + esc(l) + "</li>").join("") + "</ul></div>" +
+        "</aside>" +
+      "</div>";
+  }
+
+  function renderResults() {
+    const rows = state.order.map((pid, i) => {
+      const g = giftOf(pid);
+      const img = g ? safeUrl(g.image) : "";
+      return "<tr><td>" + (i + 1) + "</td><td><b>" + esc(pname(pid)) + "</b></td><td>" +
+        (img ? '<img src="' + esc(img) + '" alt="">' : "") + esc(g ? giftName(g) : "—") +
+        '</td><td class="muted">' + (g ? g.steals : 0) + "</td></tr>";
+    }).join("");
+    const most = state.gifts.slice().sort((a, b) => b.steals - a.steals)[0];
+    app.innerHTML =
+      '<div class="results-head">' +
+        '<div class="big-emoji">🎉</div>' +
+        "<h2>That's a wrap!</h2>" +
+        '<div class="muted">Here\'s who\'s going home with what.' +
+          (most && most.steals > 0 ? " Most fought-over: <b>" + esc(giftName(most)) + "</b> (stolen " + most.steals + "×)." : "") +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        '<table class="results"><thead><tr><th>#</th><th>Player</th><th>Goes home with</th><th>Times stolen</th></tr></thead><tbody>' + rows + "</tbody></table>" +
+      "</div>" +
+      '<div class="results-actions">' +
+        '<button class="secondary" data-act="copy">Copy results</button>' +
+        '<button class="secondary" data-act="print">Print</button>' +
+        '<button class="green" data-act="play-again">Play again with same players</button>' +
+      "</div>" +
+      '<details class="card" style="margin-top:20px"><summary style="cursor:pointer;font-weight:700">Full game log</summary>' +
+        '<ul class="log" style="max-height:none;margin-top:10px">' + state.log.slice().reverse().map((l) => "<li>" + esc(l) + "</li>").join("") + "</ul>" +
+      "</details>";
+  }
+
+  function renderModal() {
+    let root = document.getElementById("modal-root");
+    if (!root) { root = document.createElement("div"); root.id = "modal-root"; document.body.appendChild(root); }
+    const m = ui.modal;
+    if (!m) { root.innerHTML = ""; return; }
+    let inner = "";
+    if (m.kind === "confirm") {
+      inner = "<h3>" + esc(m.title) + "</h3><p class=\"muted\">" + m.text + "</p>" +
+        '<div class="modal-actions"><button class="secondary" data-modal="cancel">Cancel</button>' +
+        '<button class="' + (m.danger ? "" : "green") + '" data-modal="ok">' + esc(m.okLabel) + "</button></div>";
+    } else if (m.kind === "open" || m.kind === "edit") {
+      const g = giftById(m.giftId);
+      const isOpen = m.kind === "open";
+      inner = "<h3>" + (isOpen ? "🎁 " + esc(pname(state.active)) + " is opening gift #" + g.num : "Edit gift #" + g.num) + "</h3>" +
+        '<p class="muted" style="margin:0">' + (isOpen ? "Tear off the paper! What's inside?" : "Fix up the description or add a photo.") + "</p>" +
+        '<form id="gift-form" autocomplete="off">' +
+          '<div class="field"><label for="g-desc">What is it?</label>' +
+            '<input type="text" id="g-desc" value="' + esc(g.desc) + '" placeholder="e.g. Singing fish wall plaque"></div>' +
+          '<div class="field"><label for="g-img">Photo link <span class="muted small">(optional)</span></label>' +
+            '<input type="url" id="g-img" value="' + esc(g.image) + '" placeholder="https://…"></div>' +
+          '<div class="modal-actions"><button type="button" class="secondary" data-modal="cancel">Cancel</button>' +
+            '<button type="submit" class="green">' + (isOpen ? "Open it!" : "Save") + "</button></div>" +
+        "</form>";
+    } else if (m.kind === "rules") {
+      inner = "<h3>How White Elephant works</h3>" +
+        '<ol style="padding-left:20px;margin:10px 0">' +
+          "<li>Everyone brings one wrapped gift. Add the players, then hit <b>Start</b> to draw a random turn order.</li>" +
+          "<li>On your turn, either <b>open a wrapped gift</b> or <b>steal</b> a gift someone already opened.</li>" +
+          "<li>If your gift gets stolen, you pick right away: open a new one or steal from someone else. (You can't just steal yours back.)</li>" +
+          "<li>A turn ends when someone opens a wrapped gift. Then the next person in the order goes.</li>" +
+          "<li>Gifts <b>lock</b> 🔒 after being stolen a set number of times, and nobody can take them after that.</li>" +
+          "<li>Once every gift is open, Player 1 gets a final chance to swap, because they had nothing to steal at the start.</li>" +
+        "</ol>" +
+        '<p class="muted small">Tip: share this screen on a video call or put it on the TV. Made a mistake? Hit <b>Undo</b>.</p>' +
+        '<div class="modal-actions"><button data-modal="cancel">Got it</button></div>';
+    }
+    root.innerHTML = '<div class="modal-backdrop" data-modal="backdrop"><div class="modal" role="dialog" aria-modal="true">' + inner + "</div></div>";
+    const form = document.getElementById("gift-form");
+    if (form) {
+      const d = document.getElementById("g-desc");
+      d.focus(); d.select();
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const desc = d.value, img = document.getElementById("g-img").value;
+        const gid = m.giftId, kind = m.kind;
+        ui.modal = null;
+        if (kind === "open") openGift(gid, desc, img); else editGift(gid, desc, img);
+      });
+    }
+  }
+
+  function renderToast() {
+    let el = document.getElementById("toast-root");
+    if (!el) { el = document.createElement("div"); el.id = "toast-root"; document.body.appendChild(el); }
+    el.innerHTML = ui.toast ? '<div class="toast">' + esc(ui.toast) + "</div>" : "";
+  }
+
+  // ---------- event delegation ----------
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-act],[data-remove],[data-open],[data-steal],[data-swap],[data-edit-gift-card],[data-modal]");
+    if (!t) return;
+
+    if (t.dataset.modal) {
+      const m = ui.modal;
+      if (t.dataset.modal === "backdrop" && e.target !== t) return;
+      if (t.dataset.modal === "ok" && m && m.onOk) { ui.modal = null; renderModal(); m.onOk(); return; }
+      closeModal();
+      return;
+    }
+    if (t.dataset.editGiftCard) {
+      e.stopPropagation();
+      openModal({ kind: "edit", giftId: t.dataset.editGiftCard });
+      return;
+    }
+    if (t.dataset.remove) {
+      state.players = state.players.filter((p) => p.id !== t.dataset.remove);
+      save(); render(); return;
+    }
+    if (t.dataset.open) { openModal({ kind: "open", giftId: t.dataset.open }); return; }
+    if (t.dataset.steal) {
+      const g = giftById(t.dataset.steal);
+      confirmBox("Steal " + giftName(g) + "?",
+        "<b>" + esc(pname(state.active)) + "</b> takes it from <b>" + esc(pname(g.holder)) + "</b>, and then " + esc(pname(g.holder)) + " picks next." +
+        (state.settings.maxStealsPerGift > 0 && g.steals + 1 >= state.settings.maxStealsPerGift ? "<br><br>🔒 This steal will <b>lock</b> the gift." : ""),
+        "Steal it! 😈", () => stealGift(g.id));
+      return;
+    }
+    if (t.dataset.swap) {
+      const g = giftById(t.dataset.swap);
+      const mine = giftOf(state.order[0]);
+      confirmBox("Swap for " + giftName(g) + "?",
+        "<b>" + esc(pname(state.order[0])) + "</b> gets " + esc(giftName(g)) + " and <b>" + esc(pname(g.holder)) + "</b> gets " + esc(giftName(mine)) + ". This ends the game.",
+        "Swap & finish", () => finalSwap(g.id));
+      return;
+    }
+    switch (t.dataset.act) {
+      case "start": startGame(); break;
+      case "bulk-add": {
+        const v = document.getElementById("bulk").value;
+        v.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean).forEach((n) => state.players.push({ id: uid(), name: n, gift: "" }));
+        save(); render(); break;
+      }
+      case "clear-players":
+        confirmBox("Remove all players?", "This clears the whole list.", "Clear", () => { state.players = []; save(); render(); }, true);
+        break;
+      case "undo": undo(); break;
+      case "reroll": rerollOrder(); break;
+      case "keep": keepFinal(); break;
+      case "rules": openModal({ kind: "rules" }); break;
+      case "fullscreen":
+        if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {});
+        break;
+      case "new-game":
+        confirmBox("Start a new game?", "The current game will be cleared. You can keep the same players or start fresh.", "Keep players, new game",
+          () => newGame(true));
+        break;
+      case "play-again": newGame(true); break;
+      case "print": window.print(); break;
+      case "copy": {
+        const text = "White Elephant results\n\n" + state.order.map((pid) => {
+          const g = giftOf(pid); return pname(pid) + ": " + (g ? giftName(g) : "-");
+        }).join("\n");
+        (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+          .then(() => toast("Results copied!"))
+          .catch(() => { prompt("Copy the results:", text); });
+        break;
+      }
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && ui.modal) { closeModal(); return; }
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="button"]')) {
+      e.preventDefault(); e.target.click();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.target.matches("input,textarea") && state.phase !== "setup") {
+      e.preventDefault(); undo();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
