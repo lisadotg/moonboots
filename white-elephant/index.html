@@ -254,6 +254,9 @@
   }
   .modal h3 { margin: 0 0 6px; font-size: 1.35rem; }
   .modal .field { margin: 14px 0; display: flex; flex-direction: column; gap: 6px; }
+  .photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .photo-row img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+  .photo-row input[type=file] { font: inherit; font-size: .9rem; max-width: 100%; }
   .modal .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
   @keyframes fade { from { opacity: 0; } }
   @keyframes pop { from { transform: scale(.94); opacity: 0; } }
@@ -324,7 +327,7 @@
   });
 
   let state = load() || freshState();
-  let ui = { modal: null, toast: null };
+  let ui = { modal: null, toast: null, photo: "" };
 
   // ---------- persistence ----------
   function load() {
@@ -338,7 +341,14 @@
     } catch (e) { return null; }
   }
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) {
+      // Out of space: drop the oldest undo steps and try again.
+      while (state.history.length > 5) {
+        state.history.splice(0, Math.ceil(state.history.length / 2));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return; } catch (e2) {}
+      }
+    }
   }
 
   // ---------- helpers ----------
@@ -361,6 +371,8 @@
   function snapshot() {
     const copy = JSON.parse(JSON.stringify(state));
     delete copy.history;
+    // Photos are big; keep them out of undo snapshots so storage doesn't overflow.
+    copy.gifts.forEach((g) => { delete g.image; });
     state.history.push(copy);
     if (state.history.length > 200) state.history.shift();
   }
@@ -368,6 +380,9 @@
     const prev = state.history.pop();
     if (!prev) return;
     const hist = state.history;
+    const photos = {};
+    state.gifts.forEach((g) => { photos[g.id] = g.image || ""; });
+    prev.gifts.forEach((g) => { g.image = photos[g.id] || ""; });
     state = Object.assign(prev, { history: hist });
     ui.modal = null;
     save(); render();
@@ -791,7 +806,7 @@
       "</div>" +
       '<div class="results-actions">' +
         '<button class="secondary" data-act="copy">Copy results</button>' +
-        '<button class="secondary" data-act="print">Print</button>' +
+        (window.self === window.top ? '<button class="secondary" data-act="print">Print</button>' : "") +
         '<button class="green" data-act="play-again">Play again with same players</button>' +
       "</div>" +
       '<details class="card" style="margin-top:20px"><summary style="cursor:pointer;font-weight:700">Full game log</summary>' +
@@ -817,8 +832,10 @@
         '<form id="gift-form" autocomplete="off">' +
           '<div class="field"><label for="g-desc">What is it?</label>' +
             '<input type="text" id="g-desc" value="' + esc(g.desc) + '" placeholder="e.g. Singing fish wall plaque"></div>' +
-          '<div class="field"><label for="g-img">Photo link <span class="muted small">(optional)</span></label>' +
-            '<input type="url" id="g-img" value="' + esc(g.image) + '" placeholder="https://…"></div>' +
+          '<div class="field"><label for="g-file">Photo <span class="muted small">(optional)</span></label>' +
+            '<div class="photo-row"><img id="g-preview" alt=""' + (g.image ? ' src="' + esc(g.image) + '"' : ' hidden') + '>' +
+            '<input type="file" id="g-file" accept="image/*">' +
+            '<button type="button" class="icon" id="g-clear"' + (g.image ? "" : " hidden") + '>Remove</button></div></div>' +
           '<div class="modal-actions"><button type="button" class="secondary" data-modal="cancel">Cancel</button>' +
             '<button type="submit" class="green">' + (isOpen ? "Open it!" : "Save") + "</button></div>" +
         "</form>";
@@ -840,14 +857,41 @@
     if (form) {
       const d = document.getElementById("g-desc");
       d.focus(); d.select();
+      const g0 = giftById(m.giftId);
+      ui.photo = g0 ? g0.image : "";
+      const prev = document.getElementById("g-preview"), clr = document.getElementById("g-clear");
+      const setPhoto = (url) => { ui.photo = url; prev.hidden = !url; clr.hidden = !url; if (url) prev.src = url; else prev.removeAttribute("src"); };
+      clr.addEventListener("click", () => { setPhoto(""); document.getElementById("g-file").value = ""; });
+      document.getElementById("g-file").addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) shrinkImage(file).then(setPhoto).catch(() => toast("Couldn't read that image"));
+      });
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        const desc = d.value, img = document.getElementById("g-img").value;
+        const desc = d.value, img = ui.photo;
         const gid = m.giftId, kind = m.kind;
         ui.modal = null;
         if (kind === "open") openGift(gid, desc, img); else editGift(gid, desc, img);
       });
     }
+  }
+
+  // Downscale photos so a whole party's worth fits in browser storage.
+  function shrinkImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 480, k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.75));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+      img.src = url;
+    });
   }
 
   function renderToast() {
@@ -923,7 +967,7 @@
         }).join("\n");
         (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
           .then(() => toast("Results copied!"))
-          .catch(() => { prompt("Copy the results:", text); });
+          .catch(() => toast("Couldn't copy. Try selecting the table instead."));
         break;
       }
     }
